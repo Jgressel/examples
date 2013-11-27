@@ -1,0 +1,91 @@
+BYU Football 3rd Down Conversions
+========================================================
+  
+  
+  ```{r plotnew, fig.width=11, fig.height=6, echo = F, results = 'asis'}
+library(RJDBC) # will load DBI as well
+
+drv <- JDBC("com.mysql.jdbc.Driver","C:/Users/Jordan/Dropbox/Sports/R/mysql-connector-java-5.1.26-bin.jar",identifier.quote="`")
+con <- dbConnect(drv, 'jdbc:mysql://statsports.byu.edu/BYUathletics', user='*********', password='**********')
+
+third <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and GameID<14'))
+third$Conversion[third$Gain >= third$Dist] <- 0
+third$Conversion[third$Gain < third$Dist] <- 1
+
+
+fball <- table(third$Conversion, third$Dist)
+barplot(fball, main="3rd Down Conversion Rate 2012-2013",
+        xlab="Distance To Go", col=c("blue","red"), beside=TRUE, las=2)
+legend(42,8, c("Success","Failure"), lwd=c(6,6), col=c("blue","red"))
+```
+
+```{r plot, fig.width=11, fig.height=6, echo = F, results = 'asis'}
+library(RJDBC) # will load DBI as well
+
+drv <- JDBC("com.mysql.jdbc.Driver","C:/Users/Jordan/Dropbox/Sports/R/mysql-connector-java-5.1.26-bin.jar",identifier.quote="`")
+con <- dbConnect(drv, 'jdbc:mysql://statsports.byu.edu/BYUathletics', user='s497jgress', password='Booboo12345')
+
+third3 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and GameID>=14'))
+third3$Conversion[third3$Gain >= third3$Dist] <- 0
+third3$Conversion[third3$Gain < third3$Dist] <- 1
+
+
+fball3 <- table(third3$Conversion, third3$Dist)
+barplot(fball3, main="3rd Down Conversion Rate 2013-2014",
+        xlab="Distance To Go", col=c("blue","red"), beside=TRUE, las=2)
+#legend = rownames(fball3), beside=TRUE)
+legend(42,8, c("Success","Failure"), lwd=c(6,6), col=c("blue","red"))
+```
+
+
+Conversion Rate 2012-2013:
+  
+  ```{r , echo=F}
+conv1 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Gain >= Dist and GameID<14'))
+fail1 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Gain < Dist and GameID<14'))
+nrow(conv1)/(nrow(conv1)+nrow(fail1))
+```
+
+Conversion Rate 2013-2014:
+  
+  ```{r , echo=F}
+conv <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Gain >= Dist and GameID>=14'))
+fail <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Gain < Dist and GameID>=14'))
+nrow(conv)/(nrow(conv)+nrow(fail))
+```
+
+Pass Attempts:
+  
+  ```{r , echo=F}
+passa <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and R_P="P" and GameID>=14'))
+nrow(passa)
+```
+
+Run Attempts:
+  
+  ```{r , echo=F}
+runa <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and R_P="R" and GameID>=14'))
+nrow(runa)
+```
+
+
+```{r plot1, fig.width=11, fig.height=6, echo = F, results = 'asis'}
+pass <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and R_P="P" and GameID>=14'))
+pass$Conversion[pass$Gain >= pass$Dist] <- 0
+pass$Conversion[pass$Gain < pass$Dist] <- 1
+passt <- table(pass$Conversion, pass$Dist)
+barplot(passt, main="Pass Conversion Rate",
+        xlab="Distance", col=c("blue","red"), beside=TRUE, las=2)
+legend(38,10.5, c("Success","Failure"), lwd=c(6,6), col=c("blue","red"))
+
+```
+
+```{r plot2, fig.width=11, fig.height=6, echo = F, results = 'asis'}
+run <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and R_P="R" and GameID>=14'))
+run$Conversion[run$Gain >= run$Dist] <- 0
+run$Conversion[run$Gain < run$Dist] <- 1
+runt <- table(run$Conversion, run$Dist)
+barplot(runt, main="Run Conversion Rate",
+        xlab="Distance", col=c("blue","red"), beside=TRUE, las=2)
+legend(30,6, c("Success","Failure"), lwd=c(6,6), col=c("blue","red"))
+```
