@@ -1,0 +1,373 @@
+
+
+library(RJDBC) # will load DBI as well
+
+drv <- JDBC("com.mysql.jdbc.Driver","C:/BYUstatsports/R/mysql-connector-java-5.1.26-bin.jar",identifier.quote="`")
+con <- dbConnect(drv, 'jdbc:mysql://statsports.byu.edu/BYUathletics', user='~~~~~~~~~', password='~~~~~~~~',host='~~~~~~~~~', port=~~~~~~~~~)
+
+
+#third <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and GameID>=14'))
+third <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where gameID>=14'))
+third$Conversion[third$Gain < third$Dist] <- 0
+third$Conversion[third$Gain >= third$Dist] <- 1
+
+write
+
+total <-dbGetQuery(con, paste('SELECT * FROM footballOffStats where GameID>=14'))
+
+#Conversion
+nrow(third[which(third$Conversion==1),])/(nrow(third[which(third$Conversion==1),])+nrow(third[which(third$Conversion==0),]))
+
+
+dbListTables(con)
+readt <- dbReadTable(con, 'ncaaFootballDrives')
+rush <- dbReadTable(con, 'ncaaFootballRushing')
+pass <- rush <- dbReadTable(con, 'ncaaFootballPassing')
+
+
+
+
+head(readt)
+
+
+# making corrections to the dataset
+third$starttime[third$GameID==14] <- 1530
+third$starttime[third$GameID==15] <- 1900
+third$starttime[third$GameID==16] <- 2215
+third$starttime[third$GameID==17] <- 2100
+third$starttime[third$GameID==18] <- 2000
+third$starttime[third$GameID==19] <- 1900
+third$starttime[third$GameID==20] <- 1530
+third$starttime[third$GameID==21] <- 2000
+third$starttime[third$GameID==22] <- 1530
+third$starttime[third$GameID==23] <- 1500
+third$starttime[third$GameID==24] <- 1530
+third$starttime[third$GameID==25] <- 1500
+third$starttime[third$GameID==26] <- 2130
+
+third$temp[third$GameID==14] <- 77
+third$temp[third$GameID==15] <- 72
+third$temp[third$GameID==16] <- 68
+third$temp[third$GameID==17] <- 44
+third$temp[third$GameID==18] <- 42
+third$temp[third$GameID==19] <- 50
+third$temp[third$GameID==20] <- 70
+third$temp[third$GameID==21] <- 52
+third$temp[third$GameID==22] <- 46
+third$temp[third$GameID==23] <- 32
+third$temp[third$GameID==24] <- 26
+third$temp[third$GameID==25] <- 56
+third$temp[third$GameID==26] <- 50
+
+
+head(third)
+
+UVA <- third[which(third$GameID==14),]
+UT <- third[which(third$GameID==15),]
+UU <- third[which(third$GameID==16),]
+MDST<- third[which(third$GameID==17),]
+UTST<- third[which(third$GameID==18),]
+GT <- third[which(third$GameID==19),]
+UH <- third[which(third$GameID==20),]
+BS <- third[which(third$GameID==21),]
+WI <-third[which(third$GameID==22),]
+WI <- WI[-12,] #delete random completion with [12,]  -47    3    1    5    1
+IDST<- third[which(third$GameID==23),]
+ND <-third[which(third$GameID==24),]
+UN <- third[which(third$GameID==25),]
+UW <-third[which(third$GameID==26),]
+UW
+
+apply(third$Dist,FUN=conv)
+
+lm(Conversion~R_P, data=third)
+summary(lm(Conversion~Dist+R_P+Qtr+Dist*Qtr+R_P*Dist, data=third))
+
+
+c <-list(UVA,UT,UU,MDST,UTST,GT,UH,BS,WI,IDST,ND,UN,UW)
+
+ conv <- function(x){
+  crate<- nrow(x[which(x$Conversion==1),])/(nrow(x[which(x$Conversion==1),])+nrow(x[which(x$Conversion==0),]))
+  return(crate)
+}
+conv(third)
+conv(WI)
+Conversion <- lapply(c,conv)
+Team <- c("UVA","UT","UU","MDST","UTST","GT","UH","BS","WI","IDST","ND","UN","UW")
+t2013<-cbind(Team,Conversion)
+t2013
+
+plot(1:13,Conversion, type="b")
+GT
+
+#UVA
+Virg <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where GameID=14'))
+Virg
+cbind(UVA$FPos,UVA$Down,UVA$Dist,UVA$Gain,UVA$Conversion)
+comp <- nrow(UVA[which(UVA$Conversion==1),])+1
+inc <- nrow(UVA[which(UVA$Conversion==0),])-2
+comp/(comp+inc)
+
+
+avgry<-(third[which(third$R_P=="R"),])
+barplot(table(avgry$Gain),main="Yards gain on pass plays", ylab="Frequency", xlab="Yards Gained", col="royalblue")
+box()
+am <- median(avgry$Gain)
+mean(avgry$Gain)
+text(am, 12 , "big", cex = 5)
+
+avgpy<-(third[which(third$R_P=="P"),])
+barplot(avgpy$Gain, main="Yard gain on pass plays")
+median(avgpy$Gain)
+mean(avgpy$Gain)
+
+
+####################Overall Conversion
+fball <- table(third$Conversion, third$Dist)
+fball
+barplot(fball, main="3rd Down Conversion Rate 2013-2014",
+        xlab="Distance To Go (Yards)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(42,10, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+
+plot(third$conversion)
+
+top50 <-rbind(UVA,UU,UTST,GT,BS,WI,IDST,ND,UW)
+rest100 <- rbind(UT,MDST,IDST,UN,UH)
+conv(top50)
+conv(rest100)
+
+lesseq5 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Gain <= 5 and GameID>=14'))
+gre5 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Gain > 5 and GameID>=14'))
+
+########################Pass
+pass <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and R_P="P" and GameID>=14'))
+pass$Conversion[pass$Gain >= pass$Dist] <- 1
+pass$Conversion[pass$Gain < pass$Dist] <- 0
+passt <- table(pass$Conversion, pass$Dist)
+barplot(passt, main="2013-2014 Pass Conversion Rate",
+        xlab="Distance To Go (Yards)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(38,10.5, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+
+nrow(pass)
+nrow(pass[which(pass$Conversion==1),])/(nrow(pass[which(pass$Conversion==1),])+nrow(pass[which(pass$Conversion==0),]))
+
+#average yard gain
+mean(pass$Gain)
+median(pass$Gain)
+
+par(mfrow=c(1,2))
+plot(density(pass$Gain), main="3rd Down Pass YPP")
+tpassgain <- na.omit(totpass$Gain)
+plot(density(tpassgain), main="Every Down Pass YPP")
+#median yard gain
+
+#Total
+totpass <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where R_P="P" and GameID>=14'))
+tpassgain <- na.omit(totpass$Gain)
+plot(density(tpassgain),xlab=)
+mean(totpass$Gain, na.rm=TRUE)
+median(totpass$Gain,na.rm=TRUE)
+shapiro.test(tpassgain)
+
+
+shap####################################Run
+run <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and R_P="R" and GameID>=14'))
+run$Conversion[run$Gain >= run$Dist] <- 1
+run$Conversion[run$Gain < run$Dist] <- 0
+runt <- table(run$Conversion, run$Dist)
+barplot(runt, main="2013-2014 Run Conversion Rate",
+        xlab="Distance To Go (Yards)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(35,7, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+
+nrow(run[which(run$Conversion==1),])/(nrow(run[which(run$Conversion==1),])+nrow(run[which(run$Conversion==0),]))
+nrow(run)
+
+plot(density(run$Gain),main="3rd Down Run YPP")
+plot(density(trungain),main="Every Down Run YPP")
+mean(run$Gain)
+median(run$Gain)
+
+totrun <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where R_P="R" and GameID>=14'))
+trungain <- na.omit(totrun$Gain)
+plot(density(trungain))
+mean(totrun$Gain, na.rm=TRUE)
+median(totrun$Gain,na.rm=TRUE)
+
+
+################################################################## Plays
+tail(third)
+table(third$Form)
+table(third$Form)
+
+group(third$Play_Type)
+
+conv(third$Play_Type)
+
+belly <- third[which(third$Play_Type=="BELLY"),]
+belly
+conv(belly)
+nrow(belly)
+
+qb <- third[which(third$Play_Type=="QB DRAW"),]
+conv(qb)
+nrow(qb)
+
+power <- third[which(third$Play_Type=="POWER"),]
+conv(power)
+nrow(power)
+
+sprint <- third[which(third$Play_Type=="SPRINT DRAW"),]
+conv(sprint)
+nrow(sprint)
+
+nine <- third[which(third$Play_Type=="90"),]
+nrow(nine)
+conv(nine)
+
+nine1 <- third[which(third$Play_Type=="91"),]
+nrow(nine1)
+conv(nine1)
+
+salt <- third[which(third$Play_Type=="SALT"),]
+nrow(salt)
+conv(salt)
+
+hinge <- third[which(third$Play_Type=="HINGE"),]
+hinge
+nrow(hinge)
+conv(hinge)
+
+
+
+
+manbel <- third[which(third$Play_Type=="MAN BELLY"),]
+conv(manbel)
+
+
+
+
+par(mfrow=c(1,1))
+playtype <- table(third$Conversion, third$Play_Type,useNA="no")
+barplot(playtype, main="2013-2014 Pass Conversion Rate",
+        xlab="Distance To Go (Yards)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(50,20, c("Success","Failure"), lwd=c(14,10), col=c("blue","grey"))
+
+
+third[grep("ACE",third$Form),]
+
+
+third$cform[grep("ACE",third$Form)] <- "ACE"
+third$cform[grep("BIG",third$Form)] <- "BIG"
+third$cform[grep("BLUE",third$Form)] <- "BLUE"
+third$cform[grep("BUNCH",third$Form)] <- "BUNCH"
+third$cform[grep("LIZ",third$Form)] <- "LIZ"
+third$cform[grep("DIAMOND",third$Form)] <- "DIAMOND"
+third$cform[grep("REX",third$Form)] <- "REX"
+third$cform[grep("TRIO",third$Form)] <- "TRIO"
+third$cform[grep("RIP",third$Form)] <- "RIP"
+third$cform[grep("RIP",third$Form)] <- "EARLY"
+
+passt <- table(third$Conversion, third$cform)
+barplot(passt, main="2013-2014 Pass Conversion Rate",
+        xlab="Distance To Go (Yards)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(38,10.5, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+
+
+
+third$cform
+
+head(third)
+
+dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Dist=10 and R_P="R" and GameID>=14'))
+
+und5 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Dist<=5 and GameID>=14'))
+OV5 <- dbGetQuery(con, paste('SELECT * FROM footballOffStats where Down=3 and Dist>5 and GameID>=14'))
+und5$Conversion[und5$Gain >= und5$Dist] <- 1
+und5$Conversion[und5$Gain < und5$Dist] <- 0
+OV5
+
+OV5$Conversion[OV5$Gain >= OV5$Dist] <- 1
+OV5$Conversion[OV5$Gain < OV5$Dist] <- 0
+
+
+conv(und5)
+conv(OV5)
+
+
+xtabs(~third$Conv + third$Dist)
+
+
+third$R_P <- factor(third$R_P)
+sign <- glm( third$Conv~ third$Dist + third$FPos + factor(third$R_P) + third$Qtr, family = "binomial")
+summary(sign)
+
+sign <- glm( third$Conv~ third$Dist + third$FPos + third$temp + third$starttime, family = "binomial")
+summary(sign)
+
+split(third,third$Dist)
+
+ftemp <- table(third$Conversion, third$temp)
+barplot(ftemp, main="Temperature Effect on 3rd Down Conversion",
+        xlab="Temperature in Fahrenheit", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(2,20, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+plot(density(ftemp))
+
+
+ftime <- table(third$Conversion, third$starttime)
+bp <- barplot(ftime, main="Time Effect on 3rd Down Conversion",
+        xlab="Start time (Military Time)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+hist(ftime)
+legend(15,40, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+plot(density(ftime))
+
+text(bp, 16, round(20, 1),cex=1,pos=3)
+
+####################
+fball <- table(conv(), third$Dist)
+fball
+plot(conv(third)~third$Dist, main="3rd Down Conversion Rate 2013-2014",
+        xlab="Distance To Go (Yards)", ylab="Frequency", col=c("grey","blue"), beside=TRUE, las=2)
+legend(42,10, c("Success","Failure"), lwd=c(6,6), col=c("blue","grey"))
+
+
+wb <- loadWorkbook("C:/Users/Jordan/Desktop/ISYS 515/footballdata.xlsx", create=TRUE)
+
+createSheet(wb, name = "Data")
+
+#Insert Data in the worksheet ; default header argument is header=TRUE; default rownames=NULL
+writeWorksheet(wb, data=third, sheet="Data", header=TRUE, startRow=1, startCol=1)
+
+
+#Add a formula 
+setCellFormula(wb, "newsheet", row=7, col=2, formula="AVERAGE($B$2:$B$6)")
+
+
+#Create named reference to workbook
+createName(wb,name = "Picture",formula="newsheet!$D$4")
+
+
+#Insert Image- Supported formats are JPG/JPEG, PNG, WMF, EMF, BMP, PICT.
+addImage(wb, filename="C:/Users/Jordan/Pictures/byu.jpg", name="Picture", originalSize=TRUE)
+
+
+#Save the workbook- Writes changes to disk so no changes will be visible until saveWorkbook() is used 
+#Per XLConnect User's Guide, "Further note that calling saveWorkbook more than once leads to an exception. This is due to a
+#current issue in the underlying POI libraries."
+saveWorkbook(wb)
+
+wb <- loadWorkbook("C:/Users/Jordan/Documents/example.xlsx")
+
+
+#FORMAT
+cs <- createCellStyle(wb)
+setFillForegroundColor(cs, color = XLC$"COLOR.YELLOW")
+setFillPattern(cs, fill = XLC$"FILL.SOLID_FOREGROUND")
+setCellStyle(wb, sheet = "newsheet", row = 2:6, col = 2, cellstyle = cs)
+
+saveWorkbook(wb)
+
+
+#Create workbook, sheet, insert data, and save all in one step
+w <- writeWorksheetToFile("C:/Users/Jordan/Documents/example2.xlsx",d,"Sheet1")
+
+
